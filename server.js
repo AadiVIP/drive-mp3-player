@@ -12,20 +12,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Improved folder ID extraction
+// Enhanced folder ID extraction
 function extractFolderId(url) {
-  // Handle both full URLs and direct IDs
-  if (!url.includes('://')) {
-    // If it's just an ID
-    return url;
+  if (!url) return null;
+  
+  // Handle direct ID input
+  if (/^[a-zA-Z0-9-_]+$/.test(url)) return url;
+  
+  // Handle various Google Drive URL formats
+  const regexes = [
+    /\/folders\/([a-zA-Z0-9-_]+)/,
+    /id=([a-zA-Z0-9-_]+)/,
+    /drive\/([a-zA-Z0-9-_]+)/
+  ];
+  
+  for (const regex of regexes) {
+    const match = url.match(regex);
+    if (match) return match[1];
   }
   
-  const regex = /\/folders\/([a-zA-Z0-9-_]+)/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
+  return null;
 }
 
-// API endpoint with enhanced error handling
+// API endpoint with enhanced file handling
 app.get('/api/files', async (req, res) => {
   try {
     const { folder } = req.query;
@@ -43,7 +52,7 @@ app.get('/api/files', async (req, res) => {
       return res.status(400).json({ 
         success: false,
         error: 'Invalid Google Drive URL format',
-        correct_format: 'Should contain /folders/FOLDER_ID'
+        correct_format: 'Should contain /folders/FOLDER_ID or just the folder ID'
       });
     }
 
@@ -57,10 +66,13 @@ app.get('/api/files', async (req, res) => {
       });
     }
 
-    // First verify the folder exists and is accessible
+    // Verify folder accessibility
     try {
       await axios.get(`https://www.googleapis.com/drive/v3/files/${folderId}`, {
-        params: { key: apiKey, fields: 'id,name' }
+        params: { 
+          key: apiKey, 
+          fields: 'id,name,capabilities/canListChildren' 
+        }
       });
     } catch (folderError) {
       console.error('Folder access error:', folderError.response?.data || folderError.message);
@@ -72,33 +84,43 @@ app.get('/api/files', async (req, res) => {
       });
     }
 
-    // Get all audio files in the folder
+    // Get all supported audio files in the folder
     const response = await axios.get(
       'https://www.googleapis.com/drive/v3/files',
       {
         params: {
-          q: `'${folderId}' in parents and (mimeType='audio/mpeg' or mimeType='audio/mp3' or mimeType contains 'audio/')`,
+          q: `'${folderId}' in parents and (mimeType contains 'audio/' or fileExtension = 'mp3' or fileExtension = 'flac')`,
           key: apiKey,
-          fields: 'files(id,name,mimeType,webContentLink)',
-          pageSize: 1000
+          fields: 'files(id,name,mimeType,fileExtension,size)',
+          pageSize: 1000,
+          orderBy: 'name_natural'
         }
       }
     );
 
+    const supportedFormats = ['mp3', 'm4a', 'ogg', 'wav'];
     const files = response.data.files
-      .filter(file => file.mimeType.includes('audio/'))
-      .map(file => ({
-        id: file.id,
-        name: file.name,
-        url: `https://drive.google.com/uc?export=download&id=${file.id}`,
-        directLink: file.webContentLink || `https://drive.google.com/file/d/${file.id}/view`
-      }));
+      .filter(file => {
+        const ext = file.fileExtension || file.name.split('.').pop().toLowerCase();
+        return supportedFormats.includes(ext);
+      })
+      .map(file => {
+        const ext = file.fileExtension || file.name.split('.').pop().toLowerCase();
+        return {
+          id: file.id,
+          name: file.name,
+          url: `/stream/${file.id}`, // Using proxy endpoint for better reliability
+          type: ext,
+          size: file.size
+        };
+      });
 
     if (files.length === 0) {
       return res.status(404).json({ 
         success: false,
         error: 'No playable audio files found',
-        note: 'Ensure: 1) Files are MP3s, 2) Each file is shared publicly, 3) Files have supported audio MIME type'
+        note: 'Ensure: 1) Files are MP3/M4A/OGG/WAV, 2) Each file is shared publicly',
+        supported_formats: supportedFormats
       });
     }
 
@@ -114,9 +136,39 @@ app.get('/api/files', async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to process request',
-      details: error.response?.data?.error?.message || error.message,
-      possible_fix: 'Check server logs for detailed error'
+      details: error.response?.data?.error?.message || error.message
     });
+  }
+});
+
+// Streaming proxy endpoint
+app.get('/stream/:fileId', async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const range = req.headers.range;
+    
+    const apiKey = process.env.GOOGLE_API_KEY;
+    const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${apiKey}`;
+    
+    const { data, headers } = await axios.get(driveUrl, {
+      responseType: 'stream',
+      headers: range ? { range } : {}
+    });
+    
+    // Forward appropriate headers
+    if (headers['content-range']) {
+      res.setHeader('content-range', headers['content-range']);
+    }
+    if (headers['content-length']) {
+      res.setHeader('content-length', headers['content-length']);
+    }
+    
+    res.setHeader('content-type', 'audio/mpeg');
+    data.pipe(res);
+    
+  } catch (error) {
+    console.error('Streaming error:', error.message);
+    res.status(500).send('Error streaming file');
   }
 });
 
@@ -127,5 +179,4 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Google Drive API key: ${process.env.GOOGLE_API_KEY ? 'Configured' : 'MISSING!'}`);
 });
