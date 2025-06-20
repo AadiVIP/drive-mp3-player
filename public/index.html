@@ -3,58 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Drive Audio Player</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Drive Audio Shuffler</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1><i class="fas fa-cloud-music"></i> Google Drive Audio Player</h1>
-    
-    <div class="input-section">
-      <input type="text" id="folderUrl" 
-             placeholder="Paste Google Drive folder link or ID"
-             title="Example: https://drive.google.com/drive/folders/1zjKqnK2r28-dZaZRK9BmYo7eXgMwXNzN">
-      <button id="loadBtn"><i class="fas fa-folder-open"></i> Load Folder</button>
-    </div>
-    
-    <div id="status" aria-live="polite"></div>
-    
-    <div id="player-container" class="hidden">
-      <div class="player-controls">
-        <button id="prevBtn" title="Previous (←)"><i class="fas fa-step-backward"></i></button>
-        <button id="playBtn" title="Play (Space)"><i class="fas fa-play"></i></button>
-        <button id="pauseBtn" title="Pause (Space)"><i class="fas fa-pause"></i></button>
-        <button id="nextBtn" title="Next (→)"><i class="fas fa-step-forward"></i></button>
-        <button id="shuffleBtn" title="Shuffle (S)"><i class="fas fa-random"></i> Shuffle</button>
-      </div>
-      
-      <div class="track-info">
-        <h2 id="trackTitle">No track selected</h2>
-        <audio id="audioPlayer" controls></audio>
-      </div>
-      
-      <div class="playlist-container">
-        <div class="playlist-header">
-          <h3><i class="fas fa-list"></i> Playlist (<span id="trackCount">0</span> tracks)</h3>
-          <div class="supported-formats">
-            Supported formats: MP3, M4A, OGG, WAV
-          </div>
-        </div>
-        <ul id="playlist"></ul>
-      </div>
-    </div>
-    
-    <div class="instructions">
-      <h3><i class="fas fa-info-circle"></i> How to use:</h3>
-      <ol>
-        <li>Share a Google Drive folder publicly (right-click → Share → "Anyone with the link")</li>
-        <li>Make sure audio files inside are also shared publicly</li>
-        <li>Paste the folder link above and click "Load Folder"</li>
-      </ol>
-    </div>
+    <h1>Google Drive Audio Shuffler</h1>
+    <input id="folderUrl" type="text" placeholder="Paste Drive folder URL here" />
+    <button id="fetchBtn">Fetch & Shuffle</button>
+    <ul id="playlist"></ul>
+    <audio id="player" controls></audio>
   </div>
-  
-  <script src="player.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
