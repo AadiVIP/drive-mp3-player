@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="container">
-    <h1><i class="fas fa-music"></i> Google Drive Audio Player</h1>
+    <h1><i class="fas fa-cloud-music"></i> Google Drive Audio Player</h1>
     
     <div class="input-section">
       <input type="text" id="folderUrl" 
@@ -26,7 +26,7 @@
         <button id="playBtn" title="Play (Space)"><i class="fas fa-play"></i></button>
         <button id="pauseBtn" title="Pause (Space)"><i class="fas fa-pause"></i></button>
         <button id="nextBtn" title="Next (→)"><i class="fas fa-step-forward"></i></button>
-        <button id="shuffleBtn" title="Shuffle (S)"><i class="fas fa-random"></i></button>
+        <button id="shuffleBtn" title="Shuffle (S)"><i class="fas fa-random"></i> Shuffle</button>
       </div>
       
       <div class="track-info">
@@ -34,8 +34,13 @@
         <audio id="audioPlayer" controls></audio>
       </div>
       
-      <div class="playlist">
-        <h3><i class="fas fa-list"></i> Playlist (<span id="trackCount">0</span> tracks)</h3>
+      <div class="playlist-container">
+        <div class="playlist-header">
+          <h3><i class="fas fa-list"></i> Playlist (<span id="trackCount">0</span> tracks)</h3>
+          <div class="supported-formats">
+            Supported formats: MP3, M4A, OGG, WAV
+          </div>
+        </div>
         <ul id="playlist"></ul>
       </div>
     </div>
