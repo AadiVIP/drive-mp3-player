@@ -1,60 +1,117 @@
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  font-family: 'Arial', sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   margin: 0;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: #f5f7fa;
   color: #333;
 }
 
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
 }
 
 h1 {
   text-align: center;
-  color: #2c3e50;
+  color: #3498db;
+  font-size: 2.2em;
+  margin-bottom: 20px;
 }
 
+h1 i {
+  margin-right: 10px;
+}
+
+/* Input section */
 .input-section {
   display: flex;
   margin-bottom: 20px;
+  gap: 10px;
 }
 
 #folderUrl {
   flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
   font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+#folderUrl:focus {
+  border-color: #3498db;
+  outline: none;
 }
 
 button {
-  padding: 10px 15px;
+  padding: 12px 20px;
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-left: 10px;
   font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 button:hover {
   background-color: #2980b9;
 }
 
-#status {
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 4px;
+button i {
+  font-size: 0.9em;
 }
 
+/* Status messages */
+#status {
+  margin: 15px 0;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+#status.info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+#status.loading {
+  background-color: #fff8e1;
+  color: #ff8f00;
+}
+
+#status.success {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+#status.error {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+/* Player container */
 .hidden {
   display: none;
 }
@@ -63,42 +120,139 @@ button:hover {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  justify-content: center;
+}
+
+.player-controls button {
+  padding: 10px 15px;
+  min-width: 50px;
+  display: flex;
+  justify-content: center;
 }
 
 .track-info {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  text-align: center;
 }
 
 #trackTitle {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 1.4em;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #audioPlayer {
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 6px;
 }
 
+/* Playlist */
 .playlist {
-  margin-top: 20px;
+  margin-top: 30px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
 }
 
 #playlist {
   list-style: none;
-  padding: 0;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  margin-top: 10px;
 }
 
 #playlist li {
-  padding: 10px;
+  padding: 12px 15px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
 }
 
 #playlist li:hover {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
 }
 
 #playlist li.playing {
   background-color: #e3f2fd;
-  font-weight: bold;
+  font-weight: 600;
+  color: #1976d2;
+}
+
+#playlist li::before {
+  content: "🎵";
+  margin-right: 10px;
+  font-size: 0.9em;
+}
+
+#playlist li.playing::before {
+  content: "🎶";
+}
+
+/* Instructions */
+.instructions {
+  margin-top: 30px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.95em;
+}
+
+.instructions h3 {
+  color: #555;
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+
+.instructions ol {
+  padding-left: 20px;
+}
+
+.instructions li {
+  margin-bottom: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+  
+  .input-section {
+    flex-direction: column;
+  }
+  
+  .player-controls {
+    flex-wrap: wrap;
+  }
+  
+  #playlist {
+    max-height: 300px;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
