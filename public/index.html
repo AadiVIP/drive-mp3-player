@@ -1,19 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drive Audio Shuffler</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Drive MP3 Player</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    #player { margin-top: 20px; display: none; }
+    #playlist { list-style: none; padding: 0; }
+    #playlist li { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
+    #playlist li:hover { background: #f5f5f5; }
+    #playlist li.playing { font-weight: bold; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Google Drive Audio Shuffler</h1>
-    <input id="folderUrl" type="text" placeholder="Paste Drive folder URL here" />
-    <button id="fetchBtn">Fetch & Shuffle</button>
+  <h1>Google Drive MP3 Player</h1>
+  <input type="text" id="folderUrl" placeholder="Paste Google Drive folder URL" style="width: 400px; padding: 8px;">
+  <button id="loadBtn">Load MP3s</button>
+  
+  <div id="player">
+    <h3>Now Playing: <span id="nowPlaying"></span></h3>
+    <audio controls id="audioPlayer"></audio>
     <ul id="playlist"></ul>
-    <audio id="player" controls></audio>
   </div>
-  <script src="script.js"></script>
+
+  <script>
+    const folderUrlInput = document.getElementById('folderUrl');
+    const loadBtn = document.getElementById('loadBtn');
+    const playerDiv = document.getElementById('player');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const nowPlaying = document.getElementById('nowPlaying');
+    const playlist = document.getElementById('playlist');
+
+    let tracks = [];
+    let currentTrackIndex = 0;
+
+    loadBtn.addEventListener('click', async () => {
+      const folderUrl = folderUrlInput.value.trim();
+      if (!folderUrl) return alert('Please enter a folder URL');
+      
+      try {
+        const response = await fetch(`/api/files?folder=${encodeURIComponent(folderUrl)}`);
+        tracks = await response.json();
+        
+        if (tracks.length === 0) return alert('No MP3 files found');
+        
+        renderPlaylist();
+        playerDiv.style.display = 'block';
+        playTrack(0);
+      } catch (error) {
+        console.error(error);
+        alert('Error loading files. Check console for details.');
+      }
+    });
+
+    function renderPlaylist() {
+      playlist.innerHTML = '';
+      tracks.forEach((track, index) => {
+        const li = document.createElement('li');
+        li.textContent = track.name;
+        li.addEventListener('click', () => playTrack(index));
+        if (index === currentTrackIndex) li.classList.add('playing');
+        playlist.appendChild(li);
+      });
+    }
+
+    function playTrack(index) {
+      currentTrackIndex = index;
+      const track = tracks[index];
+      audioPlayer.src = track.url;
+      nowPlaying.textContent = track.name;
+      audioPlayer.play();
+      renderPlaylist();
+    }
+
+    audioPlayer.addEventListener('ended', () => {
+      playTrack((currentTrackIndex + 1) % tracks.length);
+    });
+  </script>
 </body>
 </html>
