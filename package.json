@@ -1,7 +1,7 @@
 {
   "name": "drive-mp3-player",
-  "version": "1.0.0",
-  "description": "Google Drive Audio Player",
+  "version": "2.0.0",
+  "description": "Google Drive Audio Player with streaming support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
