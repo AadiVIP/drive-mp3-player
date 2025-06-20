@@ -1,0 +1,104 @@
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+}
+
+.input-section {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+#folderUrl {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 15px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+#status {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none;
+}
+
+.player-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.track-info {
+  margin-bottom: 20px;
+}
+
+#trackTitle {
+  margin-bottom: 10px;
+}
+
+#audioPlayer {
+  width: 100%;
+}
+
+.playlist {
+  margin-top: 20px;
+}
+
+#playlist {
+  list-style: none;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#playlist li {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+#playlist li:hover {
+  background-color: #f0f0f0;
+}
+
+#playlist li.playing {
+  background-color: #e3f2fd;
+  font-weight: bold;
+}
