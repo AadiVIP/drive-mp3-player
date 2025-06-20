@@ -1,55 +1,77 @@
 document.addEventListener('DOMContentLoaded', () => {
   // DOM elements
-  const folderUrlInput = document.getElementById('folderUrl');
-  const loadBtn = document.getElementById('loadBtn');
-  const statusDiv = document.getElementById('status');
-  const playerContainer = document.getElementById('player-container');
-  const audioPlayer = document.getElementById('audioPlayer');
-  const trackTitle = document.getElementById('trackTitle');
-  const playlist = document.getElementById('playlist');
-  const playBtn = document.getElementById('playBtn');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const shuffleBtn = document.getElementById('shuffleBtn');
+  const elements = {
+    folderUrlInput: document.getElementById('folderUrl'),
+    loadBtn: document.getElementById('loadBtn'),
+    statusDiv: document.getElementById('status'),
+    playerContainer: document.getElementById('player-container'),
+    audioPlayer: document.getElementById('audioPlayer'),
+    trackTitle: document.getElementById('trackTitle'),
+    playlist: document.getElementById('playlist'),
+    playBtn: document.getElementById('playBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    prevBtn: document.getElementById('prevBtn'),
+    nextBtn: document.getElementById('nextBtn'),
+    shuffleBtn: document.getElementById('shuffleBtn'),
+    trackCount: document.getElementById('trackCount')
+  };
 
   // Player state
-  let tracks = [];
-  let currentTrackIndex = 0;
-  let isShuffled = false;
-  let originalOrder = [];
+  const state = {
+    tracks: [],
+    currentTrackIndex: 0,
+    isShuffled: false,
+    originalOrder: [],
+    retryCount: 0
+  };
+
+  // Format support check
+  const supportedFormats = {
+    mp3: true,
+    m4a: true,
+    ogg: true,
+    wav: true
+  };
 
   // Show status message
   function showStatus(message, type = 'info') {
-    statusDiv.textContent = message;
-    statusDiv.className = type;
+    elements.statusDiv.textContent = message;
+    elements.statusDiv.className = type;
     
-    // Auto-hide success messages after 5 seconds
     if (type === 'success') {
       setTimeout(() => {
-        if (statusDiv.textContent === message) {
-          statusDiv.textContent = '';
-          statusDiv.className = '';
+        if (elements.statusDiv.textContent === message) {
+          elements.statusDiv.textContent = '';
+          elements.statusDiv.className = '';
         }
       }, 5000);
     }
   }
 
+  // Format bytes to human-readable size
+  function formatFileSize(bytes) {
+    if (!bytes) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return parseFloat((bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+  }
+
   // Load MP3 files from Google Drive
-  loadBtn.addEventListener('click', async () => {
-    const folderUrl = folderUrlInput.value.trim();
+  elements.loadBtn.addEventListener('click', async () => {
+    const folderUrl = elements.folderUrlInput.value.trim();
     
     if (!folderUrl) {
       showStatus('Please enter a Google Drive folder URL', 'error');
-      folderUrlInput.focus();
+      elements.folderUrlInput.focus();
       return;
     }
 
     showStatus('Loading audio files...', 'loading');
-    playerContainer.classList.add('hidden');
-    playlist.innerHTML = '';
-    audioPlayer.src = '';
-    trackTitle.textContent = 'No track selected';
+    elements.playerContainer.classList.add('hidden');
+    elements.playlist.innerHTML = '';
+    elements.audioPlayer.src = '';
+    elements.trackTitle.textContent = 'No track selected';
+    state.retryCount = 0;
 
     try {
       const response = await fetch(`/api/files?folder=${encodeURIComponent(folderUrl)}`);
@@ -63,22 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('No playable audio files found in this folder');
       }
 
-      tracks = data.files;
-      originalOrder = [...tracks];
-      currentTrackIndex = 0;
-      isShuffled = false;
-      shuffleBtn.textContent = 'Shuffle';
+      state.tracks = data.files;
+      state.originalOrder = [...state.tracks];
+      state.currentTrackIndex = 0;
+      state.isShuffled = false;
+      elements.shuffleBtn.innerHTML = '<i class="fas fa-random"></i> Shuffle';
+      elements.trackCount.textContent = state.tracks.length;
 
       renderPlaylist();
-      loadTrack(currentTrackIndex);
-      playerContainer.classList.remove('hidden');
-      showStatus(`Loaded ${tracks.length} audio tracks`, 'success');
+      loadTrack(state.currentTrackIndex);
+      elements.playerContainer.classList.remove('hidden');
+      showStatus(`Loaded ${state.tracks.length} audio tracks`, 'success');
 
     } catch (error) {
       console.error('Load error:', error);
       showStatus(error.message, 'error');
       
-      // Show additional help for common errors
       if (error.message.includes('publicly')) {
         showStatus('Make sure both folder AND files are shared publicly', 'error');
       }
@@ -86,86 +108,120 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Player controls
-  playBtn.addEventListener('click', () => {
-    if (tracks.length > 0) {
-      audioPlayer.play().catch(e => {
+  elements.playBtn.addEventListener('click', () => {
+    if (state.tracks.length > 0) {
+      elements.audioPlayer.play().catch(e => {
         showStatus('Playback failed: ' + e.message, 'error');
+        handlePlaybackError();
       });
     }
   });
 
-  pauseBtn.addEventListener('click', () => {
-    audioPlayer.pause();
+  elements.pauseBtn.addEventListener('click', () => {
+    elements.audioPlayer.pause();
   });
 
-  prevBtn.addEventListener('click', () => {
-    if (tracks.length === 0) return;
+  elements.prevBtn.addEventListener('click', () => {
+    if (state.tracks.length === 0) return;
     
-    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-    loadTrack(currentTrackIndex);
-    audioPlayer.play().catch(e => console.error('Play error:', e));
+    state.currentTrackIndex = (state.currentTrackIndex - 1 + state.tracks.length) % state.tracks.length;
+    loadTrack(state.currentTrackIndex);
+    playCurrentTrack();
   });
 
-  nextBtn.addEventListener('click', () => {
-    if (tracks.length === 0) return;
+  elements.nextBtn.addEventListener('click', () => {
+    if (state.tracks.length === 0) return;
     
-    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-    loadTrack(currentTrackIndex);
-    audioPlayer.play().catch(e => console.error('Play error:', e));
+    state.currentTrackIndex = (state.currentTrackIndex + 1) % state.tracks.length;
+    loadTrack(state.currentTrackIndex);
+    playCurrentTrack();
   });
 
-  shuffleBtn.addEventListener('click', () => {
-    if (tracks.length === 0) return;
+  elements.shuffleBtn.addEventListener('click', () => {
+    if (state.tracks.length === 0) return;
     
-    isShuffled = !isShuffled;
-    shuffleBtn.textContent = isShuffled ? 'Unshuffle' : 'Shuffle';
+    state.isShuffled = !state.isShuffled;
+    elements.shuffleBtn.innerHTML = state.isShuffled 
+      ? '<i class="fas fa-undo"></i> Unshuffle' 
+      : '<i class="fas fa-random"></i> Shuffle';
     
-    if (isShuffled) {
+    if (state.isShuffled) {
       // Save original order before shuffling
-      if (originalOrder.length !== tracks.length) {
-        originalOrder = [...tracks];
+      if (state.originalOrder.length !== state.tracks.length) {
+        state.originalOrder = [...state.tracks];
       }
       
       // Shuffle the tracks (Fisher-Yates algorithm)
-      for (let i = tracks.length - 1; i > 0; i--) {
+      for (let i = state.tracks.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+        [state.tracks[i], state.tracks[j]] = [state.tracks[j], state.tracks[i]];
       }
     } else {
       // Restore original order
-      tracks = [...originalOrder];
+      state.tracks = [...state.originalOrder];
     }
     
     // Find the current track in the new order
-    const currentTrackId = tracks[currentTrackIndex]?.id;
+    const currentTrackId = state.tracks[state.currentTrackIndex]?.id;
     if (currentTrackId) {
-      currentTrackIndex = tracks.findIndex(t => t.id === currentTrackId);
+      state.currentTrackIndex = state.tracks.findIndex(t => t.id === currentTrackId);
     }
     
     renderPlaylist();
   });
 
+  // Play current track with error handling
+  function playCurrentTrack() {
+    elements.audioPlayer.play().catch(e => {
+      showStatus('Playback failed: ' + e.message, 'error');
+      handlePlaybackError();
+    });
+  }
+
+  // Handle playback errors
+  function handlePlaybackError() {
+    state.retryCount++;
+    
+    if (state.retryCount < 3) {
+      // Try same track again after delay
+      setTimeout(() => playCurrentTrack(), 1000);
+    } else {
+      // Move to next track after 3 failures
+      state.retryCount = 0;
+      setTimeout(() => elements.nextBtn.click(), 1000);
+    }
+  }
+
   // Track ended handler
-  audioPlayer.addEventListener('ended', () => {
-    nextBtn.click();
+  elements.audioPlayer.addEventListener('ended', () => {
+    elements.nextBtn.click();
   });
 
   // Error handling for audio player
-  audioPlayer.addEventListener('error', () => {
-    showStatus('Error playing track. Trying next track...', 'error');
-    setTimeout(() => nextBtn.click(), 2000);
+  elements.audioPlayer.addEventListener('error', () => {
+    showStatus('Error playing track. Trying again...', 'error');
+    handlePlaybackError();
   });
 
   // Load a track by index
   function loadTrack(index) {
-    if (tracks.length === 0 || index < 0 || index >= tracks.length) return;
+    if (state.tracks.length === 0 || index < 0 || index >= state.tracks.length) return;
 
-    const track = tracks[index];
-    audioPlayer.src = track.url;
-    trackTitle.textContent = `${index + 1}. ${track.name}`;
+    const track = state.tracks[index];
     
-    // Update playlist highlighting
-    const playlistItems = playlist.querySelectorAll('li');
+    // Skip unsupported formats
+    if (!supportedFormats[track.type]) {
+      showStatus(`Skipping ${track.type.toUpperCase()} format (may not be supported). Trying next track...`, 'warning');
+      setTimeout(() => elements.nextBtn.click(), 1500);
+      return;
+    }
+
+    elements.audioPlayer.src = track.url;
+    elements.trackTitle.textContent = `${index + 1}. ${track.name.replace(/\.[^/.]+$/, "")}`;
+    state.retryCount = 0;
+    
+    // Update the playlist highlighting
+    const playlistItems = elements.playlist.querySelectorAll('li');
     playlistItems.forEach((item, i) => {
       item.classList.toggle('playing', i === index);
     });
@@ -173,26 +229,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render the playlist
   function renderPlaylist() {
-    playlist.innerHTML = '';
+    elements.playlist.innerHTML = '';
     
-    tracks.forEach((track, index) => {
+    state.tracks.forEach((track, index) => {
       const li = document.createElement('li');
-      li.textContent = `${index + 1}. ${track.name}`;
-      li.title = track.name;
+      li.innerHTML = `
+        <span class="track-number">${index + 1}.</span>
+        <span class="track-name">${track.name.replace(/\.[^/.]+$/, "")}</span>
+        <span class="track-meta">
+          <span class="format-badge">${track.type.toUpperCase()}</span>
+          ${track.size ? `<span class="file-size">${formatFileSize(track.size)}</span>` : ''}
+        </span>
+      `;
       
-      if (index === currentTrackIndex) {
+      if (index === state.currentTrackIndex) {
         li.classList.add('playing');
       }
       
       li.addEventListener('click', () => {
-        currentTrackIndex = index;
-        loadTrack(currentTrackIndex);
-        audioPlayer.play().catch(e => {
-          showStatus('Playback error: ' + e.message, 'error');
-        });
+        state.currentTrackIndex = index;
+        loadTrack(state.currentTrackIndex);
+        playCurrentTrack();
       });
       
-      playlist.appendChild(li);
+      elements.playlist.appendChild(li);
     });
   }
 
@@ -202,18 +262,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     switch (e.code) {
       case 'Space':
-        if (audioPlayer.paused) audioPlayer.play();
-        else audioPlayer.pause();
         e.preventDefault();
+        if (elements.audioPlayer.paused) elements.playBtn.click();
+        else elements.pauseBtn.click();
         break;
       case 'ArrowLeft':
-        prevBtn.click();
+        elements.prevBtn.click();
         break;
       case 'ArrowRight':
-        nextBtn.click();
+        elements.nextBtn.click();
         break;
       case 'KeyS':
-        shuffleBtn.click();
+        elements.shuffleBtn.click();
         break;
     }
   });
